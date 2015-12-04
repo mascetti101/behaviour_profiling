@@ -307,7 +307,6 @@ class GaussianHMM(object):
 
 
 def main():
-
 	from data_import.ImportDataset import ImportData
 
 	""" Import dataset """
@@ -324,17 +323,48 @@ def main():
 	""" Define two-state model, run it on observation data and find
 		maximally likely hidden states, subject to regularization. """
 	K = 2
-	model1 = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
-	model1.learn(dataNew, zeta=zeta)
-	predicted_states = model1.decode(dataNew)
+	model1_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
+	model1_inertial.learn(dataNew, zeta=zeta)
+	predicted_states_inertial1 = np.array(model1_inertial.decode(dataNew))
 
+	print "Predicted states", predicted_states_inertial1
+	print "Transition probabilities ", model1_inertial.trans_probs
+
+
+	"""Comparison free and inertial K = 5"""
 	K = 5
-	model5 = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
-	model5.learn(dataNew, zeta=zeta)
-	predicted_states = model1.decode(dataNew)
+	model5_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
+	model5_inertial.learn(dataNew, zeta=zeta)
+	predicted_states_inertial5 = model1_inertial.decode(dataNew)
 
-	model_free = GaussianHMM(K, dataNew, rgzn_modes.STANDARD)
-	model_free.learn(dataNew, zeta= zeta)
+	print "Predicted states", predicted_states_inertial5
+	print "Transition probabilities ", model5_inertial.trans_probs
+
+
+	model5_free = GaussianHMM(K, dataNew, rgzn_modes.STANDARD)
+	model5_free.learn(dataNew, zeta= zeta)
+	predicted_states_free5 = model5_free.decode(dataNew)
+
+	print "Predicted states", predicted_states_free5
+	print "Transition probabilities ", model5_free.trans_probs
+
+
+	"""Comparison free and inertial K = 10"""
+	K = 10
+	model10_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
+	model10_inertial.learn(dataNew, zeta=zeta)
+	predicted_states_inertial10 = model1_inertial.decode(dataNew)
+
+	print "Predicted states", predicted_states_inertial10
+	print "Transition probabilities ", model10_inertial.trans_probs
+
+
+	model10_free = GaussianHMM(K, dataNew, rgzn_modes.STANDARD)
+	model10_free.learn(dataNew, zeta= zeta)
+	predicted_states_free10 = model10_free.decode(dataNew)
+
+	print "Predicted states", predicted_states_free10
+	print "Transition probabilities ", model5_free.trans_probs
 
 if __name__ == "__main__":
 	main()

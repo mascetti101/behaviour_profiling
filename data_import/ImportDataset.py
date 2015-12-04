@@ -22,6 +22,12 @@ class ImportData:
 		data = data.drop(data.columns[[19]], axis=1)
 		return data
 
+	def import_csv_reduced(self):
+		data = pd.read_csv(self.dataPath, sep=';')
+		data = data.drop(data.columns[[19]], axis=1)
+		data = data.head(10000)
+		return data
+
 	def get_clustering_table(self, data):
 		# Passare una matrix contenente solamente le colonne necessarie al clustering e quelle per HMM
 		dataNew = data.ix[:, 'FreeAcc_X':].as_matrix()

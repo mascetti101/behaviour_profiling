@@ -1,5 +1,6 @@
 import sys
 import math
+import numpy as np
 
 from sklearn.cluster import KMeans
 
@@ -12,6 +13,7 @@ class dp_means():
 		self.stop = _stop
 		# Initialize group memebership
 		self.dataClusterId = [-1 for i in range(0, self.size)] # index of group for each data pair
+		# clusters' centers
 		self.clusters = {}
 		# output records
 		self.record = []
@@ -76,7 +78,6 @@ class dp_means():
 
 	def run(self, nmax = 100, eps = 1e-7):
 		prev = 0.0
-		prevXVal = float(sys.maxint)
 		for iter in range(0, nmax):
 			# update assignments
 			self.assign()
@@ -93,7 +94,6 @@ class dp_means():
 			self.updateClusters()
 		sys.stderr.write("Iterations completed: %d\n"%iter)
 		sys.stderr.write("Final error: %f\n"%prev)
-		sys.stderr.write("Final cross-validation error: %f\n"%prevXVal)
 		# This is a step past stop if using cross-validation...
 		self.output("Final")
 		return err
@@ -115,28 +115,39 @@ class dp_means():
 def main():
 
 	from data_import.ImportDataset import ImportData
+	from sklearn.metrics.pairwise import pairwise_distances_argmin
 
 	importer = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	data = importer.import_csv()
+	data = importer.import_csv_reduced()
 	X =importer.get_clustering_table(data)
-	# estimators_kmeans = {'k_means_10': KMeans(n_clusters=10),
-	# 			  'k_means_15': KMeans(n_clusters=15),
-	# 			  'k_means_20': KMeans(n_clusters=20)}
-	# for name, est in estimators_kmeans.items():
-	# 	est.fit(X)
-	# 	print name
-	# 	print est.labels_
 
-	estimators_dpmeans = {'dp_means_1': dp_means(X, _lam=1),
-						  'dp_means_5': dp_means(X, _lam=5),
-						  'dp_means_5': dp_means(X, _lam=10)}
+	estimators_dpmeans = {'dp_means_5': dp_means(X, _lam=5)}
+						  # 'dp_means_5': dp_means(X, _lam=5),
+						  #'dp_means_5': dp_means(X, _lam=10)}
+
 	for name, est in estimators_dpmeans.items():
 		est.run()
+		k = len(np.unique(est.dataClusterId))
+		print len(np.unique(est.dataClusterId))
 		print name
 		print est.dataClusterId
-		print est.clusters
+		print est.clusters.values()
 
+	estimators_kmeans = {'k_means_k': KMeans(n_clusters=k)}
+				#'k_means_15': KMeans(n_clusters=15),
+				#'k_means_20': KMeans(n_clusters=20)}
+	for name, est in estimators_kmeans.items():
+		est.fit(X)
+		print name
+		print est.labels_
+		print est.cluster_centers_
 
+	#Analisi corrispondenza tra i 2 algoritmi di clustering
+	""" Per ciascun dei centroidi del dpmeans trova quello  """
+	""" più vicino tra i centroidi del k means """
+	order = pairwise_distances_argmin(estimators_dpmeans['dp_means_5'].clusters.values(),
+                                  estimators_kmeans['k_means_k'].cluster_centers_)
+	print order
 
 if __name__ == "__main__":
 	main()

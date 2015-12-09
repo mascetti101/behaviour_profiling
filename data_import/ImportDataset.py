@@ -24,7 +24,8 @@ class ImportData:
 
 	def import_csv_reduced(self):
 		data = pd.read_csv(self.dataPath, sep=';')
-		data = data.drop(data.columns[[19]], axis=1)
+		# Remove last column containing empty value
+		data = data.drop(data.columns[[len(data.columns)-1]], axis=1)
 		data = data.head(10000)
 		return data
 

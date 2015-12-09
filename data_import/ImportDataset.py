@@ -1,6 +1,8 @@
 import pandas as pd
-
 import datetime
+import glob
+from os import listdir
+from os.path import isfile, join
 
 __author__ = 'Paolo'
 
@@ -8,20 +10,39 @@ __author__ = 'Paolo'
 
 
 class ImportData:
+	#(TODO): modify initializer
 	def __init__(self, path):
 		self.dataPath = path
+		self.dirPath = "C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/Data/"
 
+	def import_all_files(self):
+		listFiles = [f for f in listdir(self.dirPath) if isfile(join(self.dirPath, f))]
+		fileIndex = 0
+		globalData = pd.DataFrame();
+		for f in listFiles:
+			fileIndex += 1
+			data = self.import_csv_from_path(self.dirPath+f)
+			values = [fileIndex] * len(data.index)
+			tripCol = pd.Series(values, index=data.index.values)
+			data.insert(0,"Trip_ID",tripCol)
+			globalData = pd.concat([globalData,data])
+			#(TODO): Remove print
+			#print globalData
+
+	#(TODO): Remove this useless method , used by path
 	def import_csv(self):
 		data = pd.read_csv('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt', sep=';')
-		data = data.drop(data.columns[[19]], axis=1)
+		data = data.drop(data.columns[[len(data.columns)-1]], axis=1)
 		#print data
 		return data
 
 	def import_csv_from_path(self, path):
 		data = pd.read_csv(path, sep=';')
-		data = data.drop(data.columns[[19]], axis=1)
+		# Remove last column containing empty value
+		data = data.drop(data.columns[[len(data.columns)-1]], axis=1)
 		return data
 
+	""" Import head file just for testing purposes """
 	def import_csv_reduced(self):
 		data = pd.read_csv(self.dataPath, sep=';')
 		# Remove last column containing empty value
@@ -31,7 +52,7 @@ class ImportData:
 
 	def get_clustering_table(self, data):
 		# Passare una matrix contenente solamente le colonne necessarie al clustering e quelle per HMM
-		dataNew = data.ix[:, 'FreeAcc_X':].as_matrix()
+		dataNew = data.ix[:, 'Acc_X':].as_matrix()
 		return dataNew
 
 	def build_date(self, data):
@@ -49,7 +70,10 @@ if __name__ == '__main__':
 	# Test class functionalities
 	print "Executing import dataset"
 	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	data = imp.import_csv()
+	#data = imp.import_csv()
+
+	""" Import all files """
+	imp.import_all_files()
 
 	""" Plotting AccX """
 	y = data.ix[:, 'FreeAcc_X'].values

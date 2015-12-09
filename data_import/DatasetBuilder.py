@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 __author__ = 'Paolo'
 
@@ -50,12 +51,19 @@ class DatasetBuilder:
 								meanPitch, meanAlt, meanSpeedX, meanSpeedY, meanSpeedZ ], axis=1)
 		return newDataset
 
+	def normalize(self, data):
+		normalized_data = data.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+		return normalized_data
+
 def main():
 	from data_import.ImportDataset import ImportData
 	importer = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/Data/2015-12-01/BNC-021G/Section 1/Xsens_2015-12-01_11-12_BNC-021G_Section1-000.txt')
 	data = importer.import_csv_reduced()
 	dBuilder = DatasetBuilder()
 	newData = dBuilder.computeDataset(data)
+	normNewData = dBuilder.normalize(newData)
+	normNewData.reset_index(level=0, inplace=True)
+	print normNewData
 
 if __name__ == '__main__':
 	main()

@@ -1,6 +1,6 @@
 import pandas as pd
 import datetime
-import glob
+from DatasetBuilder import DatasetBuilder
 from os import listdir
 from os.path import isfile, join
 
@@ -22,12 +22,21 @@ class ImportData:
 		for f in listFiles:
 			fileIndex += 1
 			data = self.import_csv_from_path(self.dirPath+f)
-			values = [fileIndex] * len(data.index)
-			tripCol = pd.Series(values, index=data.index.values)
-			data.insert(0,"Trip_ID",tripCol)
-			globalData = pd.concat([globalData,data])
+			dBuilder = DatasetBuilder()
+
+			#### Aggregate trip dataset
+			newData = dBuilder.computeDataset(data)
+
+			#(TODO): Consider where normalize dataset
+
+			values = [fileIndex] * len(newData.index)
+			tripCol = pd.Series(values, index=newData.index.values)
+			newData.insert(0,"Trip_ID",tripCol)
+			globalData = pd.concat([globalData,newData])
 			#(TODO): Remove print
-			#print globalData
+
+		print globalData
+		globalData.to_csv('../xsense_data/global_dataset.txt',sep=';')
 
 	#(TODO): Remove this useless method , used by path
 	def import_csv(self):
@@ -70,24 +79,24 @@ if __name__ == '__main__':
 	# Test class functionalities
 	print "Executing import dataset"
 	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	#data = imp.import_csv()
-
+	# data = imp.import_csv()
+	#
 	""" Import all files """
 	imp.import_all_files()
-
-	""" Plotting AccX """
-	y = data.ix[:, 'FreeAcc_X'].values
-	x = np.array(xrange(len(y)))
-	fig1 = plt.figure()
-	ax1 = fig1.add_subplot(111)
-	ax1.plot(x,y)
-	fig1.show()
-
-	""" Plotting AccY """
-	y = data.ix[:, 'FreeAcc_Y'].values
-	ax2 = fig1.add_subplot(111)
-	ax2.plot(x,y)
-	plt.show()
+	#
+	# """ Plotting AccX """
+	# y = data.ix[:, 'FreeAcc_X'].values
+	# x = np.array(xrange(len(y)))
+	# fig1 = plt.figure()
+	# ax1 = fig1.add_subplot(111)
+	# ax1.plot(x,y)
+	# fig1.show()
+	#
+	# """ Plotting AccY """
+	# y = data.ix[:, 'FreeAcc_Y'].values
+	# ax2 = fig1.add_subplot(111)
+	# ax2.plot(x,y)
+	# plt.show()
 
 
 

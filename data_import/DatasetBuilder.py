@@ -47,8 +47,8 @@ class DatasetBuilder:
 		meanSpeedZ = pd.Series(grouped['Vel_Z'].mean(), name='Speed_Z')
 
 		newDataset = pd.concat([gLat, gLong, meanAccX,maxAccX,minAccX,meanAccY,maxAccY,
-								minAccY,meanAccZ,maxAccZ, minAccZ, meanYaw, meanRoll,
-								meanPitch, meanAlt, meanSpeedX, meanSpeedY, meanSpeedZ ], axis=1)
+								minAccY,meanAccZ,maxAccZ,minAccZ,meanYaw,meanRoll,
+								meanPitch,meanAlt,meanSpeedX,meanSpeedY,meanSpeedZ], axis=1)
 		return newDataset
 
 	def normalize(self, data):

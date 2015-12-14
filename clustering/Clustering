@@ -138,6 +138,7 @@ def main():
 				#'k_means_20': KMeans(n_clusters=20)}
 	for name, est in estimators_kmeans.items():
 		est.fit(X)
+		est.predict(X)
 		print name
 		print est.labels_
 		print est.cluster_centers_

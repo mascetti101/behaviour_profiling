@@ -16,6 +16,9 @@ class ImportData:
 		self.dirPath = "C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/Data/"
 
 	def import_all_files(self):
+		"""
+		:return: aggregated dataset representing all collected trips as a Dataframe
+		"""
 		listFiles = [f for f in listdir(self.dirPath) if isfile(join(self.dirPath, f))]
 		fileIndex = 0
 		globalData = pd.DataFrame();
@@ -27,7 +30,7 @@ class ImportData:
 			#### Aggregate trip dataset
 			newData = dBuilder.computeDataset(data)
 
-			#(TODO): Consider where normalize dataset
+			#(TODO): think about dataset normalization
 
 			values = [fileIndex] * len(newData.index)
 			tripCol = pd.Series(values, index=newData.index.values)
@@ -35,8 +38,9 @@ class ImportData:
 			globalData = pd.concat([globalData,newData])
 			#(TODO): Remove print
 
-		print globalData
 		globalData.to_csv('../xsense_data/global_dataset.txt',sep=';')
+		return globalData
+
 
 	#(TODO): Remove this useless method , used by path
 	def import_csv(self):

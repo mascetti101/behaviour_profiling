@@ -3,10 +3,9 @@ import numpy as np
 
 __author__ = 'Paolo'
 
-""" Class used to perform dataset transformation and aggregation """
-""" such as data aggregation and new features computation  		 """
-
 class DatasetBuilder:
+	""" Class used to perform dataset transformation and aggregation
+		such as data aggregation and new features computation  	"""
 	def __init__(self):
 		pass
 
@@ -42,9 +41,9 @@ class DatasetBuilder:
 		meanAlt = pd.Series(grouped['Altitude'].mean(), name='Altitude')
 
 		""" Aggregated values SpeedX,SpeedY,SpeedZ """
-		meanSpeedX = pd.Series(grouped['Vel_X'].mean(), name='Speed_X')
-		meanSpeedY = pd.Series(grouped['Vel_Y'].mean(), name='Speed_Y')
-		meanSpeedZ = pd.Series(grouped['Vel_Z'].mean(), name='Speed_Z')
+		meanSpeedX = np.round(pd.Series(grouped['Vel_X'].mean(), name='Speed_X'),4)
+		meanSpeedY = np.round(pd.Series(grouped['Vel_Y'].mean(), name='Speed_Y'),4)
+		meanSpeedZ = np.round(pd.Series(grouped['Vel_Z'].mean(), name='Speed_Z'),4)
 
 		newDataset = pd.concat([gLat, gLong, meanAccX,maxAccX,minAccX,meanAccY,maxAccY,
 								minAccY,meanAccZ,maxAccZ,minAccZ,meanYaw,meanRoll,

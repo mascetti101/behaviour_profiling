@@ -11,10 +11,11 @@ __author__ = 'Paolo'
 class WordData():
 	def __init__(self, data):
 		self.dataset = data
+		self.models = {}
 		## max 10 cluster as assumption
 		self.dictionary = ["a","b","c","d","e","f","g","h","i","j"]
 
-	def cluster_kmeans_signal(self, signal, nClusters):
+	def cluster_kmeans_signal(self, signal, nClusters, featureName):
 		"""
 		:param signal: matrix representing a signal, needs to be applied reshape(-1, 1)
 		:param nClusters: number of clusters
@@ -23,6 +24,7 @@ class WordData():
 		#(TODO): save model for clustering for each feature
 		model = KMeans(n_clusters= nClusters)
 		model.fit_predict(signal)
+		self.models[featureName] = model
 		return model.labels_
 
 	def label_to_char(self, intLabel):
@@ -44,20 +46,21 @@ class WordData():
 
 		"""
 		for column in dataset.columns:
-			print "column", column
+			# print "column", column
 			series = dataset[column].as_matrix()
-			#(TODO): Remove comments
-			print "valori series:" , dataset[column]
-			print "valori matrice:", series
+			#(TODO): Remove prints
+			# print "valori series:" , dataset[column]
+			# print "valori matrice:", series
 
-			labels = self.cluster_kmeans_signal(series.reshape(-1, 1),5)
-			print labels
+			labels = self.cluster_kmeans_signal(series.reshape(-1, 1),5, column)
+			# print labels
 			if dataset.columns.get_loc(column) == 0:
 				newl = self.label_to_char(labels)
 			else:
 				charLabels = self.label_to_char(labels)
 				newl =[m+n for m,n in zip(newl,charLabels)]
-		print newl
+		# print newl
+		return newl
 
 def foo_partial():
 	""" test for conversion cluster id to char """
@@ -85,10 +88,15 @@ def foo_full():
 
 def main():
 
-	from data_import.ImportDataset import ImportData
+	# from data_import.ImportDataset import ImportData
 
-	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	newData = imp.import_all_files()
+	# imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
+
+	# newData = imp.import_all_files()
+
+	## import dataset precomputed
+	## Not using method removing last column
+	newData = pd.read_csv('../xsense_data/global_dataset.txt', sep=';')
 	tripId = newData.ix[:,'Trip_ID']
 
 	## Choose feature to represent in words
@@ -97,8 +105,10 @@ def main():
 	dataPartTwo = newData.ix[:, 'Speed_X':'Speed_Z']
 
 	#newDataToWord.insert(0,"Trip_ID",tripId)
+
 	newDataToWord = pd.concat([dataPartOne,dataPartTwo], axis=1)
-	print newDataToWord
+
+	# print "list of words:",newDataToWord
 
 	worder = WordData(newDataToWord)
 	words = worder.create_words(worder.dataset)

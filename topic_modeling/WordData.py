@@ -6,7 +6,7 @@ from sklearn.metrics import silhouette_samples, silhouette_score
 
 __author__ = 'Paolo'
 
-""" Class used to create text corpus """
+""" Class used to create words from continous signals """
 
 class WordData():
 	def __init__(self, data):
@@ -62,6 +62,28 @@ class WordData():
 		# print newl
 		return newl
 
+	def create_text_corpus(self,data):
+		"""
+		:param data: dataset containing at least Trip_ID and Word columns
+		:return: doc likes docs = ['aaabacdb abababdb addbaedb daecabdb badbccdb',
+			'aeaaacdb abebabdb acdbaedc dbecadda addbbccb',
+			'aeaaacdb abebabdb acdbaedc dbecadda addbbccb']
+		The same is written on file.txt
+		"""
+		groupingAttr = "Trip_ID"
+		grouped = data.groupby(groupingAttr)
+		listDocs = []
+		for name, group in grouped:
+			#(TODO): remove prints before commit
+			docWords = " ".join(group['Word'])
+			#print "word doc",docWords
+			listDocs.append(docWords)
+		#print "documents list "
+		#print listDocs
+		return listDocs
+
+
+
 def foo_partial():
 	""" test for conversion cluster id to char """
 	data = np.random.rand(100,1)
@@ -88,23 +110,14 @@ def foo_full():
 
 def main():
 
-	# from data_import.ImportDataset import ImportData
-
-	# imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-
-	# newData = imp.import_all_files()
-
 	## import dataset precomputed
 	## Not using method removing last column
 	newData = pd.read_csv('../xsense_data/global_dataset.txt', sep=';')
-	tripId = newData.ix[:,'Trip_ID']
 
 	## Choose feature to represent in words
 	## All exclused altitude
 	dataPartOne = newData.ix[:,'Acc_X':'Pitch']
 	dataPartTwo = newData.ix[:, 'Speed_X':'Speed_Z']
-
-	#newDataToWord.insert(0,"Trip_ID",tripId)
 
 	newDataToWord = pd.concat([dataPartOne,dataPartTwo], axis=1)
 
@@ -114,6 +127,11 @@ def main():
 	words = worder.create_words(worder.dataset)
 	print words
 
+	colWords = pd.Series(words, name='Word')
+	wordDataset = pd.concat([newData,colWords], axis=1)
+	wordDataset.to_csv('../xsense_data/word_global_dataset.txt',sep=';')
+
+	docs = worder.create_text_corpus(wordDataset)
 
 if __name__ == "__main__":
 	main()

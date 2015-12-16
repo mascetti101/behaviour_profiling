@@ -19,18 +19,18 @@ class DatasetBuilder:
 
 		""" Aggregated values AccX """
 		meanAccX = pd.Series(grouped['FreeAcc_X'].mean(), name='Acc_X')
-		maxAccX = pd.Series(grouped['FreeAcc_X'].min(), name='Max_Acc_X')
-		minAccX = pd.Series(grouped['FreeAcc_X'].max(), name='Min_Acc_X')
+		maxAccX = pd.Series(grouped['FreeAcc_X'].max(), name='Max_Acc_X')
+		minAccX = pd.Series(grouped['FreeAcc_X'].min(), name='Min_Acc_X')
 
 		""" Aggregated values AccY """
 		meanAccY = pd.Series(grouped['FreeAcc_Y'].mean(), name='Acc_Y')
-		maxAccY = pd.Series(grouped['FreeAcc_Y'].min(), name='Max_Acc_Y')
-		minAccY = pd.Series(grouped['FreeAcc_Y'].max(), name='Min_Acc_Y')
+		maxAccY = pd.Series(grouped['FreeAcc_Y'].max(), name='Max_Acc_Y')
+		minAccY = pd.Series(grouped['FreeAcc_Y'].min(), name='Min_Acc_Y')
 
 		""" Aggregated values AccZ """
 		meanAccZ = pd.Series(grouped['FreeAcc_Z'].mean(), name='Acc_Z')
-		maxAccZ = pd.Series(grouped['FreeAcc_Z'].min(), name='Max_Acc_Z')
-		minAccZ = pd.Series(grouped['FreeAcc_Z'].max(), name='Min_Acc_Z')
+		maxAccZ = pd.Series(grouped['FreeAcc_Z'].max(), name='Max_Acc_Z')
+		minAccZ = pd.Series(grouped['FreeAcc_Z'].min(), name='Min_Acc_Z')
 
 		""" Aggregated values Yaw,Roll,Pitch """
 		meanYaw = pd.Series(grouped['Yaw'].mean(), name='Yaw')
@@ -41,9 +41,9 @@ class DatasetBuilder:
 		meanAlt = pd.Series(grouped['Altitude'].mean(), name='Altitude')
 
 		""" Aggregated values SpeedX,SpeedY,SpeedZ """
-		meanSpeedX = np.round(pd.Series(grouped['Vel_X'].mean(), name='Speed_X'),4)
-		meanSpeedY = np.round(pd.Series(grouped['Vel_Y'].mean(), name='Speed_Y'),4)
-		meanSpeedZ = np.round(pd.Series(grouped['Vel_Z'].mean(), name='Speed_Z'),4)
+		meanSpeedX = pd.Series(grouped['Vel_X'].mean(), name='Speed_X')
+		meanSpeedY = pd.Series(grouped['Vel_Y'].mean(), name='Speed_Y')
+		meanSpeedZ = pd.Series(grouped['Vel_Z'].mean(), name='Speed_Z')
 
 		newDataset = pd.concat([gLat, gLong, meanAccX,maxAccX,minAccX,meanAccY,maxAccY,
 								minAccY,meanAccZ,maxAccZ,minAccZ,meanYaw,meanRoll,

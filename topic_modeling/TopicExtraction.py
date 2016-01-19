@@ -41,8 +41,8 @@ def main():
 	# corpus = corpora.TextCorpus(docs)
 	corpus = [dictionary.doc2bow(text) for text in texts]
 	corpora.MmCorpus.serialize('data_topic_modeling/documents.mm', corpus)
-	hdp = models.HdpModel(corpus, dictionary,T=50,K =10)
-	print hdp.show_topics(topics=20,topn=5)
+	hdp = models.HdpModel(corpus, dictionary, T=50, K=10)
+	print hdp.show_topics(topics=20, topn=5)
 
 	topicDocs= hdp[corpus]
 	for x in topicDocs:

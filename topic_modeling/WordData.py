@@ -13,7 +13,7 @@ class WordData():
 		self.dataset = data
 		self.models = {}
 		## max 10 cluster as assumption
-		self.dictionary = ["a","b","c","d","e","f","g","h","i","j"]
+		self.dictionary = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
 
 	def cluster_kmeans_signal(self, signal, nClusters, featureName):
 		"""

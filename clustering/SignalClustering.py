@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_samples, silhouette_score
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -98,15 +97,15 @@ class SignalsClustering():
 
 def main():
 	o = SignalsClustering()
-	o.plotCharts()
+	#o.plotCharts()
 
-	""" Test """
-	signal = pd.Series([0.1,0.2,0.3,0.3,0.4,0.4,0.5,0.5,1,1,2,2,2,3])
+	""" Test discretization """
+	signal = pd.Series([0.1,0.2,0.3,0.3,0.4,0.4,0.5,0.5,1,1,2,2,2,3,7,11,12,13,1,8,25], name="test_Series")
 	t = o.signal_thresholds(signal,5)
 	assignments = o.assign(signal, t)
 	print "assignments", assignments
 	print "thresholds", t
-
+	print "Series name", signal.name
 
 
 if __name__ == "__main__":

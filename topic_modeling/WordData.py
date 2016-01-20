@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from array import *
-from sklearn.metrics import silhouette_samples, silhouette_score
+from clustering.SignalClustering import SignalsClustering
+
 
 __author__ = 'Paolo'
 
@@ -14,9 +15,12 @@ class WordData():
 		self.models = {}
 		## max 10 cluster as assumption
 		self.dictionary = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
+		self.n_bins = 5
+		self.discretization_model = []
 
 	def cluster_kmeans_signal(self, signal, nClusters, featureName):
 		"""
+		Not used
 		:param signal: matrix representing a signal, needs to be applied reshape(-1, 1)
 		:param nClusters: number of clusters
 		:return: predicted labels
@@ -43,23 +47,43 @@ class WordData():
 		"""
 		:param dataset: Dataframe containing columns that we need to convert into textual values
 		:return: list of words representing the original dataset
-
 		"""
+		signDiscr = SignalsClustering()
+
 		for column in dataset.columns:
 			# print "column", column
-			series = dataset[column].as_matrix()
+
+			#series = dataset[column].as_matrix()
+			series = dataset[column]
+
 			#(TODO): Remove prints
 			# print "valori series:" , dataset[column]
 			# print "valori matrice:", series
 
-			labels = self.cluster_kmeans_signal(series.reshape(-1, 1),5, column)
+			""" Call to method used for discretization of signal """
+			#labels = self.cluster_kmeans_signal(series.reshape(-1, 1),5, column)
+
+			thresholds = signDiscr.signal_thresholds(series, self.n_bins)
+			labels = signDiscr.assign(series,thresholds)
+
+			""" Save discretization setting for each signal processed """
+			model = {
+			  'feature_name': column,
+			  'thresholds' : thresholds
+			}
+			self.discretization_model.append(model)
+
 			# print labels
+
 			if dataset.columns.get_loc(column) == 0:
 				newl = self.label_to_char(labels)
 			else:
 				charLabels = self.label_to_char(labels)
+				""" char concatenation to build words for each instant """
 				newl =[m+n for m,n in zip(newl,charLabels)]
+
 		# print newl
+
 		return newl
 
 	def create_text_corpus(self,data):

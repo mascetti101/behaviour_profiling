@@ -1,7 +1,10 @@
 import sys
 import math
 import numpy as np
+import pandas as pd
 from sklearn.cluster import KMeans
+from sklearn import preprocessing
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 __author__ = 'Paolo'
 
@@ -83,21 +86,21 @@ class dp_means():
 			# update assignments
 			self.assign()
 			# calculate error
-			err = self.error()
+			#err = self.error()
 			#
-			if abs(err-prev) < eps:
-				sys.stderr.write("Tolerance reached at step %d\n"%iter)
-				break
-			prev = err
+			#if abs(err-prev) < eps:
+			#	sys.stderr.write("Tolerance reached at step %d\n"%iter)
+			#	break
+			#prev = err
 			# going on...
-			self.errorRecord.append((iter, err))
-			self.output(str(iter))
+			#self.errorRecord.append((iter, err))
+			#self.output(str(iter))
 			self.updateClusters()
-		sys.stderr.write("Iterations completed: %d\n"%iter)
-		sys.stderr.write("Final error: %f\n"%prev)
+		#sys.stderr.write("Iterations completed: %d\n"%iter)
+		#sys.stderr.write("Final error: %f\n"%prev)
 		# This is a step past stop if using cross-validation...
-		self.output("Final")
-		return err
+		#self.output("Final")
+		#return err
 
 	def output(self, iter):
 		for i in range(0,self.size):
@@ -113,7 +116,7 @@ class dp_means():
 		for x in self.errorRecord:
 			yield x
 
-def main():
+def main_old_data():
 
 	from data_import.ImportDataset import ImportData
 	from sklearn.metrics.pairwise import pairwise_distances_argmin
@@ -143,13 +146,49 @@ def main():
 		print name
 		print est.labels_
 		print est.cluster_centers_
-
-	#Analisi corrispondenza tra i 2 algoritmi di clustering
-	""" Per ciascun dei centroidi del dpmeans trova quello  """
-	""" più vicino tra i centroidi del k means """
+		""" Per ciascun dei centroidi del dpmeans trova quello piu vicino """
 	order = pairwise_distances_argmin(estimators_dpmeans['dp_means_5'].clusters.values(),
-                                  estimators_kmeans['k_means_k'].cluster_centers_)
+									  estimators_kmeans['k_means_k'].cluster_centers_)
 	print order
+
+def main():
+	from data_import.ImportDataset import ImportData
+
+	importer = ImportData('') # Non importa il path da rimuovere, inutile
+	data_full = pd.read_csv('../xsense_data/global_dataset.txt', sep=';')
+	print 'imported'
+
+	data_clustering = data_full[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y']]
+	data_clustering = data_clustering.round(5)
+	X = data_clustering.as_matrix()
+	print 'X', X
+	X_np = data_clustering.values
+	print 'X_np', X_np
+	print 'reduced'
+
+	std_scale = preprocessing.StandardScaler().fit(X)
+	X_scaled = std_scale.transform(X)
+
+
+	estimators_dpmeans = {
+	 					  'dp_means_5': dp_means(X_scaled, _lam=5),
+	 					  'dp_means_7': dp_means(X_scaled, _lam=7),
+	 					  'dp_means_10': dp_means(X_scaled, _lam=10),
+	#					  'dp_means_20': dp_means(X_scaled, _lam=20),
+						  'dp_means_12': dp_means(X_scaled, _lam=12)}
+
+	for name, est in estimators_dpmeans.items():
+		print 'start dpmeans run'
+		est.run()
+		print 'finished dpmeans run'
+		k = len(np.unique(est.dataClusterId))
+		print len(np.unique(est.dataClusterId))
+		print name
+		print est.dataClusterId
+		print std_scale.inverse_transform(est.clusters.values())
+
+		silhouette_avg = silhouette_score(X, np.array(est.dataClusterId), sample_size= 5000)
+		print 'Silhouette score ', name, ': ', silhouette_avg
 
 if __name__ == "__main__":
 	main()

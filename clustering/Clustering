@@ -151,8 +151,58 @@ def main_old_data():
 									  estimators_kmeans['k_means_k'].cluster_centers_)
 	print order
 
+
+def plot_silhouette(s_score, s_values, n_clusters, cluster_labels, X):
+
+	import matplotlib.pyplot as plt
+	import matplotlib.cm as cm
+
+	fig, (ax1) = plt.subplots(1, 1)
+	fig.set_size_inches(18, 7)
+
+	ax1.set_xlim([-1, 1])
+	ax1.set_ylim([0, len(X) + (n_clusters + 1) * 10])
+
+	y_lower = 10
+	for i in range(1,n_clusters+1):
+		ith_cluster_silhouette_values = \
+			s_values[cluster_labels == i]
+
+		ith_cluster_silhouette_values.sort()
+
+		size_cluster_i = ith_cluster_silhouette_values.shape[0]
+		y_upper = y_lower + size_cluster_i
+
+		color = cm.spectral(float(i) / n_clusters)
+		ax1.fill_betweenx(np.arange(y_lower, y_upper),
+						  0, ith_cluster_silhouette_values,
+						  facecolor=color, edgecolor=color, alpha=0.7)
+
+		# Label the silhouette plots with their cluster numbers at the middle
+		ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+
+		# Compute the new y_lower for next plot
+		y_lower = y_upper + 10  # 10 for the 0 samples
+
+	ax1.set_title("The silhouette plot for the various clusters.")
+	ax1.set_xlabel("The silhouette coefficient values")
+	ax1.set_ylabel("Cluster label")
+
+	ax1.axvline(x=s_score, color="red", linestyle="--")
+	ax1.set_yticks([])  # Clear the yaxis labels / ticks
+	ax1.set_xticks([-1,-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+	plt.suptitle(("Silhouette analysis for KMeans clustering on sample data "
+				  "with n_clusters = %d" % n_clusters),
+                 fontsize=14, fontweight='bold')
+	plt.show()
+
+
 def main():
 	from data_import.ImportDataset import ImportData
+
+	""" Analisi  tramite clustering su dataset globale"""
+	""" Tuning valore di lambda basato su silhouette coefficient"""
 
 	importer = ImportData('') # Non importa il path da rimuovere, inutile
 	data_full = pd.read_csv('../xsense_data/global_dataset.txt', sep=';')
@@ -161,9 +211,9 @@ def main():
 	data_clustering = data_full[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y']]
 	data_clustering = data_clustering.round(5)
 	X = data_clustering.as_matrix()
-	print 'X', X
+	#print 'X', X
 	X_np = data_clustering.values
-	print 'X_np', X_np
+	#print 'X_np', X_np
 	print 'reduced'
 
 	std_scale = preprocessing.StandardScaler().fit(X)
@@ -171,11 +221,12 @@ def main():
 
 
 	estimators_dpmeans = {
-	 					  'dp_means_5': dp_means(X_scaled, _lam=5),
-	 					  'dp_means_7': dp_means(X_scaled, _lam=7),
-	 					  'dp_means_10': dp_means(X_scaled, _lam=10),
+	# 					  'dp_means_5': dp_means(X_scaled, _lam=5),
+	#					  'dp_means_7': dp_means(X_scaled, _lam=7),
+	 					  'dp_means_10': dp_means(X_scaled, _lam=12)
 	#					  'dp_means_20': dp_means(X_scaled, _lam=20),
-						  'dp_means_12': dp_means(X_scaled, _lam=12)}
+	#					  'dp_means_12': dp_means(X_scaled, _lam=12)
+						 }
 
 	for name, est in estimators_dpmeans.items():
 		print 'start dpmeans run'
@@ -187,8 +238,32 @@ def main():
 		print est.dataClusterId
 		print std_scale.inverse_transform(est.clusters.values())
 
+		""" Add cluster assignments to dataset """
+		data_clustering.loc[:, 'Cluster_Label'] = pd.Series(np.array(est.dataClusterId), index= data_clustering.index)
+		#(TODO): Save clustered dataset in file
+
+		#Extract just one trip from the full dataset to compute silhouette scores
+		trip_id = 15
+		df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
+
+		data_clustering_trip = df_trip[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y']]
+		print 'data Clustering trip', data_clustering_trip
+
+		X_trip = data_clustering_trip.as_matrix()
+
+		data_clustering_trip_labels = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+		labels_trip = data_clustering_trip_labels.ix[:,'Cluster_Label'].tolist()
+
+		print "labels_trip", labels_trip
+		print "np array labels trip",  np.array(labels_trip)
+		silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
+
 		silhouette_avg = silhouette_score(X, np.array(est.dataClusterId), sample_size= 5000)
-		print 'Silhouette score ', name, ': ', silhouette_avg
+		#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
+
+		#print 'Silhouette score ', name, ': ', silhouette_avg
+
+		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
 
 if __name__ == "__main__":
 	main()

@@ -9,6 +9,31 @@ class DatasetBuilder:
 	def __init__(self):
 		pass
 
+	def computeDataset_hcilab(self,data):
+		groupingAttr = ['Hours', 'Minutes', 'Seconds']
+		grouped = data.groupby(groupingAttr)
+
+		""" Latitude, Longitude aggregated  """
+		gLat = pd.Series(grouped['Latitude_GPS'].median(), name='Latitude')
+		gLong = pd.Series(grouped['Longitude_GPS'].median(), name='Longitude')
+
+		""" Aggregated values AccX """
+		meanAccX = pd.Series(grouped['AccelX'].mean(), name='Acc_X')
+		""" Aggregated values AccY """
+		meanAccY = pd.Series(grouped['AccelY'].mean(), name='Acc_Y')
+		""" Aggregated values AccZ """
+		meanAccZ = pd.Series(grouped['AccelZ'].mean(), name='Acc_Z')
+		""" Aggregated values Bearing """
+		meanBearing = pd.Series(grouped['Bearing_GPS'].mean(), name='Bearing')
+		""" Aggregated values Altitude """
+		meanAlt = pd.Series(grouped['Altitude_GPS'].mean(), name='Altitude')
+		""" Aggregated values Speed_GPS """
+		meanSpeed = pd.Series(grouped['Speed_GPS'].mean(), name='Speed')
+
+		newDataset = pd.concat([gLat, gLong, meanAlt, meanAccX,meanAccY,meanAccZ,meanSpeed,meanBearing], axis=1)
+		return newDataset
+
+
 	def computeDataset(self, data):
 		groupingAttr = ['UTC_Year','UTC_Month', 'UTC_Day','UTC_Hour','UTC_Minute','UTC_Second']
 		grouped = data.groupby(groupingAttr)

@@ -14,6 +14,7 @@ class ImportData:
 	def __init__(self, path):
 		self.dataPath = path
 		self.dirPath = "C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/Data/"
+		self.dirPath_new = "C:/Users/Paolo/Desktop/Reply/Thesis/Data/hcilabData/"
 
 	def import_all_files(self):
 		"""
@@ -39,6 +40,33 @@ class ImportData:
 			#(TODO): Remove print
 
 		globalData.to_csv('../xsense_data/global_dataset.txt',sep=';')
+		return globalData
+
+
+	def import_all_files_new_dataset(self):
+		"""
+		:return: aggregated dataset representing all collected trips as a Dataframe
+		"""
+		listFiles = [f for f in listdir(self.dirPath_new) if isfile(join(self.dirPath_new, f))]
+		fileIndex = 0
+		globalData = pd.DataFrame();
+		for f in listFiles:
+			fileIndex += 1
+			data = pd.read_csv(self.dirPath_new + f, sep=';')
+			dBuilder = DatasetBuilder()
+
+			#### Aggregate trip dataset
+			newData = dBuilder.computeDataset_hcilab(data)
+
+			#(TODO): think about dataset normalization
+
+			values = [fileIndex] * len(newData.index)
+			tripCol = pd.Series(values, index=newData.index.values)
+			newData.insert(0,"Trip_ID",tripCol)
+			globalData = pd.concat([globalData,newData])
+			#(TODO): Remove print
+
+		globalData.to_csv('../xsense_data/global_dataset_hcilab.txt',sep=';')
 		return globalData
 
 
@@ -86,7 +114,7 @@ if __name__ == '__main__':
 	# data = imp.import_csv()
 	#
 	""" Import all files """
-	imp.import_all_files()
+	imp.import_all_files_new_dataset()
 	#
 	# """ Plotting AccX """
 	# y = data.ix[:, 'FreeAcc_X'].values

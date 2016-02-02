@@ -103,18 +103,45 @@ class ImportData:
 		return date
 
 
+
+def abs_speed_computation():
+	data = pd.read_csv('../xsense_data/global_dataset.txt', sep=';')
+	data['Speed_X'] = data['Speed_X'].abs()
+	data['Speed_Y'] = data['Speed_Y'].abs()
+	data.to_csv('../xsense_data/global_dataset_abs_speed.txt',sep=';')
+
+def compute_diff_yaw():
+	data = pd.read_csv('../xsense_data/global_dataset_abs_speed.txt', sep=';')
+	data['Diff_Yaw'] = data.groupby(['Trip_ID'])['Yaw'].transform(lambda x: x.diff())
+	data['Diff_Yaw'].fillna(0, inplace=True)
+	data.to_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt',sep=';', index= False)
+
+def main_import():
+	print "Executing import dataset"
+	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
+	imp.import_all_files()
+
+def main_import_hcilab():
+	print "Executing import dataset"
+	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
+	imp.import_all_files_new_dataset()
+
 if __name__ == '__main__':
 
 	import numpy as np
 	import matplotlib.pyplot as plt
 
-	# Test class functionalities
-	print "Executing import dataset"
-	imp = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	# data = imp.import_csv()
-	#
-	""" Import all files """
-	imp.import_all_files_new_dataset()
+	""" import xsens dataset"""
+	#main_import()
+
+	""" import hcilab dataset """
+	#main_import_hcilab()
+
+	""" ABS of speed measurements for global dataset """
+	#abs_speed_computation()
+
+	""" Add column containing differential Yaw """
+	compute_diff_yaw()
 	#
 	# """ Plotting AccX """
 	# y = data.ix[:, 'FreeAcc_X'].values

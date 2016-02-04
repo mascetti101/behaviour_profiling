@@ -111,10 +111,24 @@ def abs_speed_computation():
 	data.to_csv('../xsense_data/global_dataset_abs_speed.txt',sep=';')
 
 def compute_diff_yaw():
+	"""
+	Compute diff over Yaw signal for xsens dataset
+	:return: file csv containing original dataset adding new column
+	"""
 	data = pd.read_csv('../xsense_data/global_dataset_abs_speed.txt', sep=';')
 	data['Diff_Yaw'] = data.groupby(['Trip_ID'])['Yaw'].transform(lambda x: x.diff())
 	data['Diff_Yaw'].fillna(0, inplace=True)
 	data.to_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt',sep=';', index= False)
+
+def compute_diff_bearing():
+	"""
+	Compute diff over Bearing signal for xsens dataset
+	:return: file csv containing original dataset adding new column
+	"""
+	data = pd.read_csv('../xsense_data/global_dataset_hcilab.txt', sep=';')
+	data['Diff_Bearing'] = data.groupby(['Trip_ID'])['Bearing'].transform(lambda x: x.diff())
+	data['Diff_Bearing'].fillna(0, inplace=True)
+	data.to_csv('../xsense_data/global_dataset_hcilab_diff_bearing.txt',sep=';', index= False)
 
 def main_import():
 	print "Executing import dataset"
@@ -141,7 +155,10 @@ if __name__ == '__main__':
 	#abs_speed_computation()
 
 	""" Add column containing differential Yaw """
-	compute_diff_yaw()
+	#compute_diff_yaw()
+
+	""" Add column containing differential Bearing """
+	compute_diff_bearing()
 	#
 	# """ Plotting AccX """
 	# y = data.ix[:, 'FreeAcc_X'].values

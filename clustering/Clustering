@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn import preprocessing
+from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_samples, silhouette_score
 
 __author__ = 'Paolo'
@@ -204,6 +206,7 @@ def main():
 	from data_import.ImportDataset import ImportData
 
 	""" Analisi  tramite clustering su dataset globale"""
+	""" No diff_Yaw """
 	""" Tuning valore di lambda basato su silhouette coefficient"""
 
 	importer = ImportData('') # Non importa il path da rimuovere, inutile
@@ -267,7 +270,6 @@ def main():
 
 		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
 
-
 def cluster_abs_diff_yaw():
 	import seaborn as sns
 	import matplotlib.pyplot as plt
@@ -278,8 +280,10 @@ def cluster_abs_diff_yaw():
 	data_full = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
 	print 'imported'
 
+	#(TODO): Reuse Yaw before commmit
+	#data_clustering = data_full[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y','Diff_Yaw']]
+	data_clustering = data_full[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']]
 
-	data_clustering = data_full[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y','Diff_Yaw']]
 	data_clustering = data_clustering.round(5)
 	X = data_clustering.as_matrix()
 	#print 'X', X
@@ -301,7 +305,7 @@ def cluster_abs_diff_yaw():
 	estimators_dpmeans = {
 	# 					  'dp_means_5': dp_means(X_scaled, _lam=5),
 	#					  'dp_means_7': dp_means(X_scaled, _lam=7),
-	# 					  'dp_means_10': dp_means(X_scaled, _lam=10),
+	 					  'dp_means_10': dp_means(X_scaled, _lam=10),
 						  'dp_means_12': dp_means(X_scaled, _lam=12)
 	#					  'dp_means_20': dp_means(X_scaled, _lam=20)
 						 }
@@ -311,10 +315,10 @@ def cluster_abs_diff_yaw():
 		est.run()
 		print 'finished dpmeans run'
 		k = len(np.unique(est.dataClusterId))
-		print len(np.unique(est.dataClusterId))
-		print name
-		print est.dataClusterId
-		print std_scale.inverse_transform(est.clusters.values())
+		print 'n_cluster : ',len(np.unique(est.dataClusterId))
+		print 'model : ',name
+		print 'labels : ',est.dataClusterId
+		print 'centroids : ',std_scale.inverse_transform(est.clusters.values())
 
 		""" Add cluster assignments to dataset """
 		data_clustering.loc[:, 'Cluster_Label'] = pd.Series(np.array(est.dataClusterId), index= data_clustering.index)
@@ -324,7 +328,10 @@ def cluster_abs_diff_yaw():
 		trip_id = 26
 		df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
 
-		data_clustering_trip = df_trip[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y', 'Diff_Yaw']]
+		#(TODO): Reuse Yaw before commmit
+
+		data_clustering_trip = df_trip[['Acc_X','Acc_Y','Speed_X','Speed_Y', 'Diff_Yaw']]
+		#data_clustering_trip = df_trip[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y', 'Diff_Yaw']]
 		#print 'data Clustering trip', data_clustering_trip
 
 		X_trip = data_clustering_trip.as_matrix()
@@ -348,7 +355,7 @@ def k_means_clustering(n_cluster):
 	data_full = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
 	print 'imported'
 
-	data_clustering = data_full[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y','Diff_Yaw']]
+	data_clustering = data_full[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']]
 	data_clustering = data_clustering.round(5)
 	X = data_clustering.as_matrix()
 
@@ -361,6 +368,7 @@ def k_means_clustering(n_cluster):
 	k_labels = k_means_model.fit_predict(X_scaled)
 	k_centroids = k_means_model.cluster_centers_
 
+	print 'Centroids: ', k_centroids
 	""" Add cluster assignments to dataset """
 	data_clustering.loc[:, 'Cluster_Label'] = pd.Series(k_labels, index= data_clustering.index)
 	#(TODO): Save clustered dataset in file
@@ -369,7 +377,7 @@ def k_means_clustering(n_cluster):
 	trip_id = 26
 	df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
 
-	data_clustering_trip = df_trip[['Acc_X','Acc_Y','Yaw','Speed_X','Speed_Y', 'Diff_Yaw']]
+	data_clustering_trip = df_trip[['Acc_X','Acc_Y','Speed_X','Speed_Y', 'Diff_Yaw']]
 	#print 'data Clustering trip', data_clustering_trip
 
 	X_trip = data_clustering_trip.as_matrix()
@@ -381,17 +389,200 @@ def k_means_clustering(n_cluster):
 	print "np array labels trip",  np.array(labels_trip)
 	silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
 
-	silhouette_avg = silhouette_score(X, k_labels, sample_size= 5000)
+	silhouette_avg = silhouette_score(X, k_labels, sample_size= 10000)
 	#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
 
 	#print 'Silhouette score ', name, ': ', silhouette_avg
 
 	plot_silhouette(silhouette_avg, silhouette_values_trip, n_cluster, np.array(labels_trip), X_trip)
 
+def affinity_propagation_xsens_dataset():
+
+	#Extract just one trip from the full dataset to compute silhouette scores
+	trip_id = 26
+
+	data_full = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
+	print 'imported'
+
+	data_clustering = data_full[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']]
+	data_clustering = data_clustering.round(5)
+	data_clustering = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+
+	X = data_clustering.as_matrix()
+
+	std_scale = preprocessing.StandardScaler().fit(X)
+	X_scaled = std_scale.transform(X)
+	print 'scaled'
+
+	affinity_model = AffinityPropagation(damping = 0.8, preference= -300).fit(X_scaled)
+	cluster_centers_indices = affinity_model.cluster_centers_indices_
+
+	labels = affinity_model.labels_
+	n_clusters = len(cluster_centers_indices)
+
+	print 'labels: ', labels
+	print 'n_clusters: ', n_clusters
+
+	""" Add cluster assignments to dataset """
+	data_clustering.loc[:, 'Cluster_Label'] = pd.Series(labels, index= data_clustering.index)
+	#(TODO): Save clustered dataset in file
+
+	df_trip = data_full.loc[data_full['Trip_ID'] == trip_id]
+
+	data_clustering_trip = df_trip[['Acc_X','Acc_Y','Speed_X','Speed_Y', 'Diff_Yaw']]
+	#print 'data Clustering trip', data_clustering_trip
+
+	X_trip = data_clustering_trip.as_matrix()
+
+	data_clustering_trip_labels = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+	labels_trip = data_clustering_trip_labels.ix[:,'Cluster_Label'].tolist()
+
+	print "labels_trip", labels_trip
+	print "np array labels trip",  np.array(labels_trip)
+	silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
+
+	silhouette_avg = silhouette_score(X_scaled, labels, sample_size= 10000)
+	#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
+
+	#print 'Silhouette score ', name, ': ', silhouette_avg
+
+	plot_silhouette(silhouette_avg, silhouette_values_trip, n_clusters, np.array(labels_trip), X_trip)
+
+def dp_means_hcilab_dataset():
+	import seaborn as sns
+	import matplotlib.pyplot as plt
+
+	""" Analisi  tramite clustering su dataset globale con abs su velocita e delta yaw """
+	""" Tuning valore di lambda basato su silhouette coefficient """
+
+	data_full = pd.read_csv('../xsense_data/global_dataset_hcilab_diff_bearing.txt', sep=';')
+	print 'imported'
+
+	data_clustering = data_full[['Acc_X', 'Acc_Z', 'Speed', 'Diff_Bearing']]
+
+	data_clustering = data_clustering.round(5)
+	X = data_clustering.as_matrix()
+	#print 'X', X
+	X_np = data_clustering.values
+	#print 'X_np', X_np
+	print 'reduced'
+
+	std_scale = preprocessing.StandardScaler().fit(X)
+	X_scaled = std_scale.transform(X)
+
+	#(TODO): CReate a separeted method
+	""" Correlation analysis """
+	corr = data_clustering.corr()
+	sns.heatmap(corr,square = True)
+	plt.yticks(rotation=0)
+	plt.xticks(rotation=90)
+	plt.show()
+
+	estimators_dpmeans = {
+	 					  'dp_means_6': dp_means(X_scaled, _lam=6),
+						  'dp_means_8': dp_means(X_scaled, _lam=8),
+	 					  'dp_means_9': dp_means(X_scaled, _lam=9)
+	#					  'dp_means_12': dp_means(X_scaled, _lam=12)
+	#					  'dp_means_20': dp_means(X_scaled, _lam=20)
+						 }
+
+	for name, est in estimators_dpmeans.items():
+		print 'start dpmeans run'
+		est.run()
+		print 'finished dpmeans run'
+		k = len(np.unique(est.dataClusterId))
+		print len(np.unique(est.dataClusterId))
+		print name
+		print est.dataClusterId
+		print std_scale.inverse_transform(est.clusters.values())
+
+		""" Add cluster assignments to dataset """
+		data_clustering.loc[:, 'Cluster_Label'] = pd.Series(np.array(est.dataClusterId), index= data_clustering.index)
+		#(TODO): Save clustered dataset in file
+
+		#Extract just one trip from the full dataset to compute silhouette scores
+		trip_id = 5
+		df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
+
+		#(TODO): Reuse Yaw before commmit
+
+		data_clustering_trip = df_trip[['Acc_X', 'Acc_Z', 'Speed', 'Diff_Bearing']]
+
+		X_trip = data_clustering_trip.as_matrix()
+
+		data_clustering_trip_labels = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+		labels_trip = data_clustering_trip_labels.ix[:,'Cluster_Label'].tolist()
+
+		print "labels_trip", labels_trip
+		print "np array labels trip",  np.array(labels_trip)
+		silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
+
+		silhouette_avg = silhouette_score(X, np.array(est.dataClusterId), sample_size= 5000)
+		#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
+
+		print 'Silhouette score ', name, ': ', silhouette_avg
+
+		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
+
+def affinity_propagation_hcilab_dataset():
+	trip_id = 5
+
+	data_full = pd.read_csv('../xsense_data/global_dataset_hcilab_diff_bearing.txt', sep=';')
+	print 'imported'
+
+	data_clustering = data_full[['Acc_X', 'Acc_Z', 'Speed', 'Diff_Bearing']]
+	data_clustering = data_clustering.round(5)
+	data_clustering = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+
+	X = data_clustering.as_matrix()
+
+	std_scale = preprocessing.StandardScaler().fit(X)
+	X_scaled = std_scale.transform(X)
+	print 'scaled'
+
+	affinity_model = AffinityPropagation(damping = 0.8, preference= -200).fit(X_scaled)
+	cluster_centers_indices = affinity_model.cluster_centers_indices_
+
+	labels = affinity_model.labels_
+	n_clusters = len(cluster_centers_indices)
+	centroids = std_scale.inverse_transform(affinity_model.cluster_centers_)
+
+	print 'labels: ', labels
+	print 'n_clusters: ', n_clusters
+	print 'centroids: ', centroids
+
+	""" Add cluster assignments to dataset """
+	data_clustering.loc[:, 'Cluster_Label'] = pd.Series(labels, index= data_clustering.index)
+	#(TODO): Save clustered dataset in file
+
+	df_trip = data_full.loc[data_full['Trip_ID'] == trip_id]
+
+	data_clustering_trip = df_trip[['Acc_X', 'Acc_Z', 'Speed', 'Diff_Bearing']]
+	#print 'data Clustering trip', data_clustering_trip
+
+	X_trip = data_clustering_trip.as_matrix()
+
+	data_clustering_trip_labels = data_clustering.loc[data_full['Trip_ID'] == trip_id]
+	labels_trip = data_clustering_trip_labels.ix[:,'Cluster_Label'].tolist()
+
+	print "labels_trip", labels_trip
+	silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
+
+	silhouette_avg = silhouette_score(X_scaled, labels, sample_size= 10000)
+	#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
+
+	print 'Silhouette score : ', silhouette_avg
+
+	plot_silhouette(silhouette_avg, silhouette_values_trip, n_clusters, np.array(labels_trip), X_trip)
 
 if __name__ == "__main__":
 	#main()
 	#cluster_abs_diff_yaw()
-	k_means_clustering(5)
-	k_means_clustering(6)
-	k_means_clustering(7)
+	#k_means_clustering(5)
+	#k_means_clustering(7)
+	#k_means_clustering(9)
+
+	#affinity_propagation_xsens_dataset()
+
+	#dp_means_hcilab_dataset()
+	affinity_propagation_hcilab_dataset()

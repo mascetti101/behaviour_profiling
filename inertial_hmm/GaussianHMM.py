@@ -48,8 +48,14 @@ class GaussianHMM(object):
 		return sub_table[0], sub_table
 
 	def get_kmeans_emission_init(self, sequence):
+		from sklearn import preprocessing
+
 		K = self.num_states
-		assignments = KMeans(n_clusters=K).fit_predict(sequence)
+		""" Added scaling for clustering """
+		std_scale = preprocessing.StandardScaler().fit(sequence)
+		sequence_scaled = std_scale.transform(sequence)
+
+		assignments = KMeans(n_clusters=K).fit_predict(sequence_scaled)
 		means = []
 		covs = []
 		for k in range(K):
@@ -310,11 +316,10 @@ def main():
 	from data_import.ImportDataset import ImportData
 
 	""" Import dataset """
-	importer = ImportData('C:/Users/Paolo/Desktop/Reply/Thesis/Data/XsenseData/MT_07700161-003-001.txt')
-	data = importer.import_csv()
+	data = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
 	#Passare una matrix contenente solamente le colonne necessarie al clustering e quelle per HMM
-	dataNew = data.ix[:,'FreeAcc_X':].as_matrix()
-	print dataNew
+	data_model = data[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']].as_matrix()
+
 
 	""" Regularization modes and parameter """
 	rgzn_modes = GaussianHMM.RgznModes()
@@ -322,46 +327,52 @@ def main():
 
 	""" Define two-state model, run it on observation data and find
 		maximally likely hidden states, subject to regularization. """
-	K = 2
-	model1_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
-	model1_inertial.learn(dataNew, zeta=zeta)
-	predicted_states_inertial1 = np.array(model1_inertial.decode(dataNew))
-
-	print "Predicted states", predicted_states_inertial1
-	print "Transition probabilities ", model1_inertial.trans_probs
-
-
-	"""Comparison free and inertial K = 5"""
 	K = 5
-	model5_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
-	model5_inertial.learn(dataNew, zeta=zeta)
-	predicted_states_inertial5 = model1_inertial.decode(dataNew)
 
-	print "Predicted states", predicted_states_inertial5
-	print "Transition probabilities ", model5_inertial.trans_probs
+	model5_free = GaussianHMM(K,data_model, rgzn_modes.STANDARD)
+	model5_free.learn(data_model, zeta= zeta)
+	predicted_states_free5 = model5_free.decode(data_model)
+
+	print "Predicted states free", predicted_states_free5
+	print "Transition probabilities free", model5_free.trans_probs
+
+	model5_inertial = GaussianHMM(K, data_model, rgzn_modes.INERTIAL)
+	model5_inertial.learn(data_model, zeta=zeta)
+	predicted_states_inertial5 = np.array(model5_inertial.decode(data_model))
+
+	print "Predicted states inertial", predicted_states_inertial5
+	print "Transition probabilities inertial", model5_inertial.trans_probs
+
+	model5_map = GaussianHMM(K, data_model, rgzn_modes.MAP)
+	model5_map.learn(data_model, zeta=zeta)
+	predicted_states_map5 = np.array(model5_map.decode(data_model))
+
+	print "Predicted states map", predicted_states_map5
+	print "Transition probabilities map", model5_map.trans_probs
 
 
-	model5_free = GaussianHMM(K, dataNew, rgzn_modes.STANDARD)
-	model5_free.learn(dataNew, zeta= zeta)
-	predicted_states_free5 = model5_free.decode(dataNew)
+	"""Comparison free and inertial K = 7"""
+	K = 7
+	model7_inertial = GaussianHMM(K,data_model, rgzn_modes.INERTIAL)
+	model7_inertial.learn(data_model, zeta=zeta)
+	predicted_states_inertial7 = model7_inertial.decode(data_model)
 
-	print "Predicted states", predicted_states_free5
-	print "Transition probabilities ", model5_free.trans_probs
-
+	print "Predicted states", predicted_states_inertial7
+	print "Transition probabilities ", model7_inertial.trans_probs
 
 	"""Comparison free and inertial K = 10"""
 	K = 10
-	model10_inertial = GaussianHMM(K, dataNew, rgzn_modes.INERTIAL)
-	model10_inertial.learn(dataNew, zeta=zeta)
-	predicted_states_inertial10 = model1_inertial.decode(dataNew)
+	model10_inertial = GaussianHMM(K, data_model, rgzn_modes.INERTIAL)
+	model10_inertial.learn(data_model, zeta=zeta)
+	predicted_states_inertial10 = model10_inertial.decode(data_model)
 
 	print "Predicted states", predicted_states_inertial10
 	print "Transition probabilities ", model10_inertial.trans_probs
 
 
-	model10_free = GaussianHMM(K, dataNew, rgzn_modes.STANDARD)
-	model10_free.learn(dataNew, zeta= zeta)
-	predicted_states_free10 = model10_free.decode(dataNew)
+	model10_free = GaussianHMM(K, data_model, rgzn_modes.STANDARD)
+	model10_free.learn(data_model, zeta= zeta)
+	predicted_states_free10 = model10_free.decode(data_model)
 
 	print "Predicted states", predicted_states_free10
 	print "Transition probabilities ", model5_free.trans_probs

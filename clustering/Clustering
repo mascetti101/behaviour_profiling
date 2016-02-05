@@ -1,14 +1,15 @@
 import sys
 import math
+import os
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn import preprocessing
 from sklearn.cluster import AffinityPropagation
-from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_samples, silhouette_score
 
 __author__ = 'Paolo'
+
 
 class dp_means():
 	def __init__(self, _X, _k = 1, _lam = 1, _stop=False):
@@ -118,6 +119,7 @@ class dp_means():
 		for x in self.errorRecord:
 			yield x
 
+
 def main_old_data():
 
 	from data_import.ImportDataset import ImportData
@@ -200,6 +202,16 @@ def plot_silhouette(s_score, s_values, n_clusters, cluster_labels, X):
 	plt.show()
 
 
+def save_csv_clustering_results(data, file_name):
+	"""
+	:param data: dataframe to be written, last column contains clustering labels
+	:param file_name: name of the file
+	:return: null
+	"""
+	format = '.pdf'
+	dir_name = '/data_clustering/'
+	full_path = os.path.join(dir_name, file_name + format)
+	data.to_csv(full_path, sep=';', index=False)
 
 
 def main():
@@ -269,6 +281,7 @@ def main():
 		#print 'Silhouette score ', name, ': ', silhouette_avg
 
 		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
+
 
 def cluster_abs_diff_yaw():
 	import seaborn as sns
@@ -350,6 +363,7 @@ def cluster_abs_diff_yaw():
 
 		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
 
+
 def k_means_clustering(n_cluster):
 
 	data_full = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
@@ -395,6 +409,7 @@ def k_means_clustering(n_cluster):
 	#print 'Silhouette score ', name, ': ', silhouette_avg
 
 	plot_silhouette(silhouette_avg, silhouette_values_trip, n_cluster, np.array(labels_trip), X_trip)
+
 
 def affinity_propagation_xsens_dataset():
 
@@ -447,6 +462,7 @@ def affinity_propagation_xsens_dataset():
 	#print 'Silhouette score ', name, ': ', silhouette_avg
 
 	plot_silhouette(silhouette_avg, silhouette_values_trip, n_clusters, np.array(labels_trip), X_trip)
+
 
 def dp_means_hcilab_dataset():
 	import seaborn as sns
@@ -524,6 +540,7 @@ def dp_means_hcilab_dataset():
 
 		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
 
+
 def affinity_propagation_hcilab_dataset():
 	trip_id = 5
 
@@ -574,6 +591,7 @@ def affinity_propagation_hcilab_dataset():
 	print 'Silhouette score : ', silhouette_avg
 
 	plot_silhouette(silhouette_avg, silhouette_values_trip, n_clusters, np.array(labels_trip), X_trip)
+
 
 if __name__ == "__main__":
 	#main()

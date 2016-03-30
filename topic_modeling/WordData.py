@@ -157,5 +157,22 @@ def main():
 
 	docs = worder.create_text_corpus(wordDataset)
 
+
+def main_new_dataset():
+	""" Corpus creation method using Xsens dataset considering abs speed and diff yaw"""
+	newData = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
+
+	listFeatures = ['Acc_X', 'Acc_Y', 'Speed_X', 'Speed_Y', 'Diff_Yaw']
+	data = newData.ix[:, listFeatures]
+
+	worder = WordData(data)
+	words = worder.create_words(worder.dataset)
+	print words
+	print worder.discretization_model
+
+	colWords = pd.Series(words, name='Word')
+	wordDataset = pd.concat([newData,colWords], axis=1)
+	wordDataset.to_csv('../xsense_data/word_global_dataset_abs_speed_diff_yaw.txt',sep=';')
+
 if __name__ == "__main__":
-	main()
+	main_new_dataset()

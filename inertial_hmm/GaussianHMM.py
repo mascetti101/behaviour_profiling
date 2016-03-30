@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
@@ -7,7 +8,7 @@ MIN_START_PROB = 1e-200
 MIN_TRANS_PROB = 1e-200
 MIN_ALPHA_BETA = 1e-250
 MIN_COV_VAL = 1e-5
-MAX_ITER = 10
+MAX_ITER = 15
 MIN_GINI = .5
 
 class GaussianHMM(object):
@@ -24,7 +25,7 @@ class GaussianHMM(object):
 
 	def __init__(self, number_of_states, sequence, regularization_mode = 0):
 		self.num_states = number_of_states
-		emission_means, emission_covariances = self.get_kmeans_emission_init(sequence)
+		emission_means, emission_covariances = self.get_dpmeans_emission_init(sequence)
 		self.emission_density_objs = [multivariate_normal(mean=emission_means[k], cov=emission_covariances[k], allow_singular=True) for k in range(number_of_states)]
 		start_probs, transition_probs = self.get_random_start_and_trans_probs()
 		self.start_probs = start_probs
@@ -47,6 +48,25 @@ class GaussianHMM(object):
 		sub_table = (sub_table.T / sub_table.sum(axis=1)).T
 		return sub_table[0], sub_table
 
+	def get_dpmeans_emission_init(self, sequence):
+
+		K = self.num_states
+		data = pd.read_csv('../clustering/data_clustering/dp_means_12_Xsens.csv', sep=';')
+		assignments = data['Cluster_Label'].values
+
+		print assignments
+
+		means = []
+		covs = []
+		for k in range(1,K+1):
+			points = sequence[np.equal(assignments, k)]
+			mean_vector = np.mean(points, axis=0)
+			cov_matrix = np.cov(points, rowvar=0)
+			cov_matrix[cov_matrix==0] = MIN_COV_VAL
+			means.append(mean_vector)
+			covs.append(cov_matrix)
+		return means, covs
+
 	def get_kmeans_emission_init(self, sequence):
 		from sklearn import preprocessing
 
@@ -56,6 +76,7 @@ class GaussianHMM(object):
 		sequence_scaled = std_scale.transform(sequence)
 
 		assignments = KMeans(n_clusters=K).fit_predict(sequence_scaled)
+		print assignments
 		means = []
 		covs = []
 		for k in range(K):
@@ -377,5 +398,77 @@ def main():
 	print "Predicted states", predicted_states_free10
 	print "Transition probabilities ", model5_free.trans_probs
 
+def save_csv_hmm_results(data, file_name):
+	"""
+	:param data: dataframe to be written, last column contains clustering labels
+	:param file_name: name of the file
+	:return: null
+	"""
+	format = '.csv'
+	dir_name = 'data_hmm'
+	full_path = os.path.join(dir_name, file_name + format)
+	data.to_csv(full_path, sep=';', index=False)
+	#data.to_csv(file_name, sep=';', index=False)
+
+def run_dp12_init():
+	data = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
+	#Passare una matrix contenente solamente le colonne necessarie al clustering e quelle per HMM
+	data_model_df =  data[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']]
+	data_model = data_model_df.as_matrix()
+
+	""" Regularization modes and parameter """
+	rgzn_modes = GaussianHMM.RgznModes()
+	zeta = 3.
+
+	""" Define two-state model, run it on observation data and find
+		maximally likely hidden states"""
+	K = 7
+
+	model7_free = GaussianHMM(K,data_model, rgzn_modes.STANDARD)
+	model7_free.learn(data_model, zeta= zeta)
+	predicted_states_free7 = model7_free.decode(data_model)
+	emission_obj = model7_free.emission_density_objs
+
+	print "Predicted states inertial", predicted_states_free7
+	print "Transition probabilities inertial", np.around(model7_free.trans_probs, decimals=4)
+	for i in range(K):
+		print "Emission Object", i, " : ", emission_obj[i].mean
+
+	data_model_df.loc[:, 'Cluster_Label'] = pd.Series(predicted_states_free7, index=data_model_df.index)
+	data_model_df.loc[:, 'Trip_ID'] = data[['Trip_ID']]
+
+	save_csv_hmm_results(data_model_df, "hmm_inertial_7_XSens")
+
+def run_inertial_dp12_init():
+
+	data = pd.read_csv('../xsense_data/global_dataset_abs_speed_diff_yaw.txt', sep=';')
+	#Passare una matrix contenente solamente le colonne necessarie al clustering e quelle per HMM
+	data_model_df =  data[['Acc_X','Acc_Y','Speed_X','Speed_Y','Diff_Yaw']]
+	data_model = data_model_df.as_matrix()
+
+	""" Regularization modes and parameter """
+	rgzn_modes = GaussianHMM.RgznModes()
+	zeta = 3.
+
+	""" Define two-state model, run it on observation data and find
+		maximally likely hidden states"""
+	K = 7
+
+	model7_inertial = GaussianHMM(K, data_model, rgzn_modes.INERTIAL)
+	model7_inertial.learn(data_model, zeta=zeta)
+	predicted_states_inertial7 = model7_inertial.decode(data_model)
+	emission_obj = model7_inertial.emission_density_objs
+
+	print "Predicted states free", predicted_states_inertial7
+	print "Transition probabilities free", np.around(model7_inertial.trans_probs, decimals=4)
+	for i in range(K):
+		print "Emission Object", i, " : ", emission_obj[i].mean
+
+	data_model_df.loc[:, 'Cluster_Label'] = pd.Series(predicted_states_inertial7, index=data_model_df.index)
+	data_model_df.loc[:, 'Trip_ID'] = data[['Trip_ID']]
+
+	save_csv_hmm_results(data_model_df, "hmm_free_7_XSens")
+
 if __name__ == "__main__":
-	main()
+	#main()
+	run_inertial_dp12_init()

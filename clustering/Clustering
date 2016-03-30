@@ -7,7 +7,8 @@ from sklearn.cluster import KMeans
 from sklearn import preprocessing
 from sklearn.cluster import AffinityPropagation
 from sklearn.metrics import silhouette_samples, silhouette_score
-
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 __author__ = 'Paolo'
 
 
@@ -158,9 +159,6 @@ def main_old_data():
 
 def plot_silhouette(s_score, s_values, n_clusters, cluster_labels, X):
 
-	import matplotlib.pyplot as plt
-	import matplotlib.cm as cm
-
 	fig, (ax1) = plt.subplots(1, 1)
 	fig.set_size_inches(18, 7)
 
@@ -196,7 +194,7 @@ def plot_silhouette(s_score, s_values, n_clusters, cluster_labels, X):
 	ax1.set_yticks([])  # Clear the yaxis labels / ticks
 	ax1.set_xticks([-1,-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1])
 
-	plt.suptitle(("Silhouette analysis for clustering on sample data "
+	plt.suptitle(("Silhouette analysis for clustering "
 				  "with n_clusters = %d" % n_clusters),
                  fontsize=14, fontweight='bold')
 	plt.show()
@@ -208,10 +206,11 @@ def save_csv_clustering_results(data, file_name):
 	:param file_name: name of the file
 	:return: null
 	"""
-	format = '.pdf'
-	dir_name = '/data_clustering/'
+	format = '.csv'
+	dir_name = 'data_clustering'
 	full_path = os.path.join(dir_name, file_name + format)
 	data.to_csv(full_path, sep=';', index=False)
+	#data.to_csv(file_name, sep=';', index=False)
 
 
 def main():
@@ -238,11 +237,11 @@ def main():
 
 
 	estimators_dpmeans = {
-	# 					  'dp_means_5': dp_means(X_scaled, _lam=5),
-	#					  'dp_means_7': dp_means(X_scaled, _lam=7),
-	 					  'dp_means_10': dp_means(X_scaled, _lam=12)
-	#					  'dp_means_20': dp_means(X_scaled, _lam=20),
-	#					  'dp_means_12': dp_means(X_scaled, _lam=12)
+	 					  'dp_means_5': dp_means(X_scaled, _lam=5),
+						  'dp_means_7': dp_means(X_scaled, _lam=7),
+	 					  'dp_means_10': dp_means(X_scaled, _lam=10),
+						  'dp_means_12': dp_means(X_scaled, _lam=12),
+						  'dp_means_15': dp_means(X_scaled, _lam=15)
 						 }
 
 	for name, est in estimators_dpmeans.items():
@@ -309,18 +308,18 @@ def cluster_abs_diff_yaw():
 
 	#(TODO): CReate a separeted method
 	""" Correlation analysis """
-	corr = data_clustering.corr()
-	sns.heatmap(corr,square = True)
-	plt.yticks(rotation=0)
-	plt.xticks(rotation=90)
-	plt.show()
+	# corr = data_clustering.corr()
+	# sns.heatmap(corr, square=True)
+	# plt.yticks(rotation=0)
+	# plt.xticks(rotation=90)
+	# plt.show()
 
 	estimators_dpmeans = {
-	# 					  'dp_means_5': dp_means(X_scaled, _lam=5),
-	#					  'dp_means_7': dp_means(X_scaled, _lam=7),
-	 					  'dp_means_10': dp_means(X_scaled, _lam=10),
-						  'dp_means_12': dp_means(X_scaled, _lam=12)
-	#					  'dp_means_20': dp_means(X_scaled, _lam=20)
+	 					  'dp_means_5': dp_means(X_scaled, _lam=5),
+						  'dp_means_7': dp_means(X_scaled, _lam=7),
+	 					  'dp_means_13': dp_means(X_scaled, _lam=13)
+#						  'dp_means_12': dp_means(X_scaled, _lam=12),
+#						  'dp_means_15': dp_means(X_scaled, _lam=15)
 						 }
 
 	for name, est in estimators_dpmeans.items():
@@ -328,18 +327,19 @@ def cluster_abs_diff_yaw():
 		est.run()
 		print 'finished dpmeans run'
 		k = len(np.unique(est.dataClusterId))
-		print 'n_cluster : ',len(np.unique(est.dataClusterId))
-		print 'model : ',name
-		print 'labels : ',est.dataClusterId
-		print 'centroids : ',std_scale.inverse_transform(est.clusters.values())
+		print 'n_cluster : ', len(np.unique(est.dataClusterId))
+		print 'model : ', name
+		print 'labels : ', est.dataClusterId
+		print 'centroids : ', std_scale.inverse_transform(est.clusters.values())
 
 		""" Add cluster assignments to dataset """
 		data_clustering.loc[:, 'Cluster_Label'] = pd.Series(np.array(est.dataClusterId), index= data_clustering.index)
+		data_clustering.loc[:, 'Trip_ID'] = data_full[['Trip_ID']]
 		#(TODO): Save clustered dataset in file
-
+		save_csv_clustering_results(data_clustering, "dp_means_" +str(est.lam)+"_Xsens")
 		#Extract just one trip from the full dataset to compute silhouette scores
 		trip_id = 26
-		df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
+		df_trip = data_full.loc[data_full['Trip_ID'] == trip_id]
 
 		#(TODO): Reuse Yaw before commmit
 
@@ -359,7 +359,7 @@ def cluster_abs_diff_yaw():
 		silhouette_avg = silhouette_score(X, np.array(est.dataClusterId), sample_size= 5000)
 		#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
 
-		#print 'Silhouette score ', name, ': ', silhouette_avg
+		print 'Silhouette score ', name, ': ', silhouette_avg
 
 		plot_silhouette(silhouette_avg, silhouette_values_trip, k, np.array(labels_trip), X_trip)
 
@@ -429,14 +429,16 @@ def affinity_propagation_xsens_dataset():
 	X_scaled = std_scale.transform(X)
 	print 'scaled'
 
-	affinity_model = AffinityPropagation(damping = 0.8, preference= -300).fit(X_scaled)
+	affinity_model = AffinityPropagation(damping = 0.8, preference= -350).fit(X_scaled)
 	cluster_centers_indices = affinity_model.cluster_centers_indices_
 
 	labels = affinity_model.labels_
 	n_clusters = len(cluster_centers_indices)
+	cluster_centers = affinity_model.cluster_centers_
 
 	print 'labels: ', labels
 	print 'n_clusters: ', n_clusters
+	print 'cluster_centers: ', cluster_centers
 
 	""" Add cluster assignments to dataset """
 	data_clustering.loc[:, 'Cluster_Label'] = pd.Series(labels, index= data_clustering.index)
@@ -457,6 +459,7 @@ def affinity_propagation_xsens_dataset():
 	silhouette_values_trip = silhouette_samples(X_trip, np.array(labels_trip))
 
 	silhouette_avg = silhouette_score(X_scaled, labels, sample_size= 10000)
+	print "silhouette coefficient ", silhouette_avg
 	#silhouette_values = silhouette_samples(X, np.array(est.dataClusterId))
 
 	#print 'Silhouette score ', name, ': ', silhouette_avg
@@ -488,34 +491,36 @@ def dp_means_hcilab_dataset():
 
 	#(TODO): CReate a separeted method
 	""" Correlation analysis """
-	corr = data_clustering.corr()
-	sns.heatmap(corr,square = True)
-	plt.yticks(rotation=0)
-	plt.xticks(rotation=90)
-	plt.show()
+	# corr = data_clustering.corr()
+	# sns.heatmap(corr,square = True)
+	# plt.yticks(rotation=0)
+	# plt.xticks(rotation=90)
+	# plt.show()
 
 	estimators_dpmeans = {
-	 					  'dp_means_6': dp_means(X_scaled, _lam=6),
-						  'dp_means_8': dp_means(X_scaled, _lam=8),
-	 					  'dp_means_9': dp_means(X_scaled, _lam=9)
-	#					  'dp_means_12': dp_means(X_scaled, _lam=12)
-	#					  'dp_means_20': dp_means(X_scaled, _lam=20)
-						 }
+		'dp_means_6': dp_means(X_scaled, _lam=6),
+		'dp_means_8': dp_means(X_scaled, _lam=8),
+		'dp_means_9': dp_means(X_scaled, _lam=9),
+		'dp_means_10': dp_means(X_scaled, _lam=10),
+		'dp_means_12': dp_means(X_scaled, _lam=12)
+#		'dp_means_20': dp_means(X_scaled, _lam=20)
+	}
 
 	for name, est in estimators_dpmeans.items():
 		print 'start dpmeans run'
 		est.run()
 		print 'finished dpmeans run'
 		k = len(np.unique(est.dataClusterId))
-		print len(np.unique(est.dataClusterId))
-		print name
-		print est.dataClusterId
-		print std_scale.inverse_transform(est.clusters.values())
+		print 'n_cluster : ', len(np.unique(est.dataClusterId))
+		print 'model : ', name
+		print 'labels : ', est.dataClusterId
+		print 'centroids : ', std_scale.inverse_transform(est.clusters.values())
 
 		""" Add cluster assignments to dataset """
 		data_clustering.loc[:, 'Cluster_Label'] = pd.Series(np.array(est.dataClusterId), index= data_clustering.index)
+		data_clustering.loc[:, 'Trip_ID'] = data_full[['Trip_ID']]
 		#(TODO): Save clustered dataset in file
-
+		save_csv_clustering_results(data_clustering, "dp_means_" +str(est.lam)+"_Hcilab")
 		#Extract just one trip from the full dataset to compute silhouette scores
 		trip_id = 5
 		df_trip = data_full.loc[data_full['Trip_ID']== trip_id]
@@ -592,6 +597,81 @@ def affinity_propagation_hcilab_dataset():
 
 	plot_silhouette(silhouette_avg, silhouette_values_trip, n_clusters, np.array(labels_trip), X_trip)
 
+def cluster_features_distribution_xSens(data):
+	X = data.ix[:,0:5].values
+	y = data.ix[:,5].values
+
+	label_dict = {1: 'Cluster_1',
+				  2: 'Cluster_2',
+				  3: 'Cluster_3',
+				  4: 'Cluster_4',
+				  5: 'Cluster_5',
+				  6: 'Cluster_6',
+				  7: 'Cluster_7'
+				  #8: 'Cluster_8',
+				  #9: 'Cluster_9'
+				   }
+
+	feature_dict = {0: 'Acc_X',
+                1: 'Acc_Y',
+                2: 'Speed_X',
+                3: 'Speed_Y',
+				4: 'Diff_Yaw'}
+
+	with plt.style.context('seaborn-whitegrid'):
+		plt.figure(figsize=(8, 6))
+		for cnt in range(5):
+			plt.subplot(3, 2, cnt+1)
+			for lab in range(1, len(label_dict)+1):
+				plt.hist(X[y == lab, cnt], label=label_dict[lab], bins=10, alpha=0.3, normed=True)
+			plt.xlabel(feature_dict[cnt])
+		plt.legend(loc='upper right', fancybox=True, fontsize=8)
+
+	plt.tight_layout()
+	plt.show()
+
+
+	p = plt.figure(figsize=(10, 10))
+
+	colors={1:'red',
+			2:'blue',
+		   3:'yellow',
+		   4:'green',
+		   5:'violet',
+		   6:'orange',
+		   7:'darkmagenta'}
+	for trip_id in range(1,27):
+		data_trip = data.loc[data['Trip_ID'] == trip_id]
+		counts = data_trip['Cluster_Label'].value_counts(sort=False)
+		print counts
+		p.add_subplot(9, 3, trip_id, title='Trip').pie(counts,labels=counts.index,
+														colors=[v for k, v in colors.items() if k in counts.index.values],
+														autopct='%1.1f%%')
+	plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+	plt.legend(bbox_to_anchor=(4, 4))
+	plt.show()
+
+def cluster_trips(data):
+
+	print 'imported'
+	col_names = data.columns.values[1:]
+	data_clustering = data.ix[:, col_names]
+	print 'data clustering : ', data_clustering
+	#data_clustering = data[['Cluster1', 'Cluster2', 'Cluster3', 'Cluster4', 'Cluster5', 'Cluster6', 'Cluster7']]
+	X = data_clustering.as_matrix()
+
+	std_scale = preprocessing.StandardScaler().fit(X)
+	X_scaled = std_scale.transform(X)
+	print 'scaled'
+
+	""" KMeans clustering algorithm"""
+	k_means_model = KMeans(n_clusters=3, init='k-means++')
+	k_labels = k_means_model.fit_predict(X_scaled)
+	k_centroids = k_means_model.cluster_centers_
+
+	print 'Centroids: ', k_centroids
+	print 'Labels: ', k_labels
+
 
 if __name__ == "__main__":
 	#main()
@@ -603,4 +683,16 @@ if __name__ == "__main__":
 	#affinity_propagation_xsens_dataset()
 
 	#dp_means_hcilab_dataset()
-	affinity_propagation_hcilab_dataset()
+	#affinity_propagation_hcilab_dataset()
+
+
+	""" Plot Clusters' feature distribution"""
+	#data = pd.read_csv('data_clustering/dp_means_12_Xsens.csv', sep=';')
+	#cluster_features_distribution_xSens(data)
+
+	""" Clustering trips"""
+	data_dp = pd.read_csv('../results_segmentation/dpmeans_dataset.csv', sep=',')
+	cluster_trips(data_dp)
+
+	data_hmm = pd.read_csv('../results_segmentation/hmm_dataset.csv', sep=',')
+	cluster_trips(data_hmm)
